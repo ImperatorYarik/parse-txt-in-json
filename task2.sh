@@ -10,11 +10,14 @@ touch "$output_file"
 #test variables
 test_name=""
 test_arr=()
-declare -A test
+#declare -A test
 declare -A summary
 lines_count=0
 test_num=0
 idx=0
+
+tests_json="[]"
+summary_json="{}"
 
 while read -r line;do 
     if [[ $line =~ "-" ]]; then
@@ -26,34 +29,20 @@ while read -r line;do
         
         test_name=$(grep -o '\[[^]]*\]' <<< "$line" | sed 's/\[ \|\ ]//g')
         test_num=$(echo "$line" | grep -oE '[0-9]+ tests' | awk '{print $1}')
-        echo "{
- \"testName\": \"$test_name\",
- \"tests\": ["
+        tests_json="[]"
     fi
     if [[ $line =~ "command" ]]; then
         ((idx++))
         if [[ $line =~ "not" ]]; then
-            test["status"]="false"
+            status="false"
         else
-            test["status"]="true"
+            status="true"
             
         fi
-        test["value"]=$(echo "$line" | grep -oE '[0-9]+ms')
-        test["name"]=$(echo "$line" | sed 's/^.*  //; s/, [0-9].*$//')
-        #echo ${test["name"]}
-        if [[ $idx -eq $test_num ]]; then
-            echo "   {
-     \"name\": \" ${test["name"]}\",
-     \"status\": ${test["status"]},
-     \"duration\": \"${test["value"]}\"
-   }"
-        else
-            echo "   {
-     \"name\": \" ${test["name"]}\",
-     \"status\": ${test["status"]},
-     \"duration\": \"${test["value"]}\"
-   },"
-        fi
+        duration=$(echo "$line" | grep -oE '[0-9]+ms')
+        name=$(echo "$line" | sed 's/^.*  //; s/, [0-9].*$//')
+        test=$(./jq -n --arg name "$name" --arg status $status --arg duration "$duration" '{name: $name, status: $status, duration: $duration}')
+        tests_json=$(./jq --null-input --argjson tests_json "$tests_json" --argjson test "$test" '$tests_json + [$test]')        
         
     fi
     
@@ -62,27 +51,21 @@ while read -r line;do
         IFS=',' read -r -a out <<< "$line"
         for item in "${out[@]}"; do
             if [[ $item == *'passed'* ]]; then
-                summary["success"]=$(echo "${out[0]}" | awk '{print $1}')
+                success=$(echo "${out[0]}" | awk '{print $1}')
             elif [[ $item == *'failed'* ]]; then
-                summary["failed"]=$(echo "${out[1]}" | awk '{print $1}')
+                failed=$(echo "${out[1]}" | awk '{print $1}')
             elif [[ $item == *'rated'* ]]; then
-                summary["rating"]=$(echo "$line" | grep -oE '[0-9]+\.[0-9]+')
+                rating=$(echo "$line" | grep -oE '[0-9]+\.[0-9]+')
             elif [[ $item == *'spent'* ]]; then
-                summary["duration"]=$(echo "$line" | grep -oE '[0-9]+ms')
+                duration=$(echo "$line" | grep -oE '[0-9]+ms')
             fi
         done
-        echo "],
- \"summary\": {
-   \"success\": ${summary["success"]},
-   \"failed\": ${summary["failed"]},
-   \"rating\": ${summary["rating"]},
-   \"duration\": \"${summary["duration"]}\"
- }
-}
-        "
+    summary_json=$(./jq -n --arg success $success --arg failed $failed --arg rating $rating --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}')     output=$(./jq -n --arg testName "$test_name" --argjson tests "$tests_json" --argjson summary "$summary_json" '{testName: $testName, tests: $tests, summary: $summary}')
+
 fi
-    
-done < "$original_file" >> "$output_file"
+done < "$original_file" 
+output=$(./jq -n --arg testName "$test_name" --argjson tests "$tests_json" --argjson summary "$summary_json" '{testName: $testName, tests: $tests, summary: $summary}')
+echo "$output" > "$output_file"
 echo $test_num
 echo $lines_count
 echo "done"
