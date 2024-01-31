@@ -60,7 +60,7 @@ while read -r line;do
                 duration=$(echo "$line" | grep -oE '[0-9]+ms')
             fi
         done
-    summary_json=$(./jq -n --argjson success $success --argjson failed $failed --argjson rating $rating --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}')     
+    summary_json=$(./jq -n --arg success $success --arg failed $failed --arg rating $rating --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}')     
 
 fi
 done < "$original_file" 
