@@ -11,7 +11,7 @@ touch "$output_file"
 test_name=""
 test_arr=()
 #declare -A test
-declare -A summary
+#declare -A summary
 lines_count=0
 test_num=0
 idx=0
@@ -60,7 +60,7 @@ while read -r line;do
                 duration=$(echo "$line" | grep -oE '[0-9]+ms')
             fi
         done
-    summary_json=$(./jq -n --argjson success $success --argjson failed $failed --argjson rating $rating --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}')     output=$(./jq -n --arg testName "$test_name" --argjson tests "$tests_json" --argjson summary "$summary_json" '{testName: $testName, tests: $tests, summary: $summary}')
+    summary_json=$(./jq -n --argjson success $success --argjson failed $failed --argjson rating $rating --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}')     
 
 fi
 done < "$original_file" 
