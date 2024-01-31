@@ -21,14 +21,15 @@ while read -r line;do
        continue
     fi
     if [[ $line =~ "[" ]]; then
-        lines_count=0
+       
+        
         test_name=$(grep -o '\[[^]]*\]' <<< "$line" | sed 's/\[ \|\ ]//g')
         test_num=$(echo "$line" | grep -oE '[0-9]+ tests' | awk '{print $1}')
         echo "{
  \"testName\": \"$test_name\",
  \"tests\": ["
     fi
-    if [[ $line =~ "expecting command" ]]; then
+    if [[ $line =~ "command" ]]; then
         ((idx++))
         if [[ $line =~ "not" ]]; then
             test["status"]="false"
@@ -37,24 +38,26 @@ while read -r line;do
             
         fi
         test["value"]=$(echo "$line" | grep -oE '[0-9]+ms')
-        test["name"]=$(echo "$line" | sed 's/^.* expecting //; s/, [0-9].*$//')
+        test["name"]=$(echo "$line" | sed 's/^.*  //; s/, [0-9].*$//')
         #echo ${test["name"]}
         if [[ $idx -eq $test_num ]]; then
             echo "   {
-     \"name\": \"expecting ${test["name"]}\",
+     \"name\": \" ${test["name"]}\",
      \"status\": ${test["status"]},
      \"duration\": \"${test["value"]}\"
    }"
         else
             echo "   {
-     \"name\": \"expecting ${test["name"]}\",
+     \"name\": \" ${test["name"]}\",
      \"status\": ${test["status"]},
      \"duration\": \"${test["value"]}\"
    },"
         fi
         
     fi
+    
     if [[ $lines_count -eq 2 ]]; then
+     lines_count=0
         IFS=',' read -r -a out <<< "$line"
         for item in "${out[@]}"; do
             if [[ $item == *'passed'* ]]; then
@@ -79,8 +82,6 @@ while read -r line;do
 fi
     
 done < "$original_file" >> "$output_file"
-echo $test1
-
-
-
+echo $test_num
+echo $lines_count
 echo "done"
