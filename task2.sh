@@ -4,6 +4,7 @@
 
 original_file=${1}
 output_file="output.json"
+rm -rf "$output_file"
 touch "$output_file"
 
 #test variables
