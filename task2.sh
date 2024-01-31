@@ -4,17 +4,14 @@
 
 original_file=${1}
 output_file="output.json"
-rm -rf "$output_file"
-touch "$output_file"
+
 
 #test variables
 test_name=""
-test_arr=()
 #declare -A test
 #declare -A summary
-lines_count=0
-test_num=0
-idx=0
+#lines_count=0
+
 
 tests_json="[]"
 summary_json="{}"
@@ -24,6 +21,8 @@ while read -r line;do
        ((lines_count++))
        continue
     fi
+
+
     if [[ $line =~ "[" ]]; then
        
         
@@ -31,8 +30,10 @@ while read -r line;do
         test_num=$(echo "$line" | grep -oE '[0-9]+ tests' | awk '{print $1}')
         tests_json="[]"
     fi
+
+
     if [[ $line =~ "command" ]]; then
-        ((idx++))
+        
         if [[ $line =~ "not" ]]; then
             status="false"
         else
@@ -46,8 +47,9 @@ while read -r line;do
         
     fi
     
+
     if [[ $line =~ "rated" ]]; then
-     lines_count=0
+     #lines_count=0
         IFS=',' read -r -a out <<< "$line"
         for item in "${out[@]}"; do
             if [[ $item == *'passed'* ]]; then
@@ -60,12 +62,16 @@ while read -r line;do
                 duration=$(echo "$line" | grep -oE '[0-9]+ms')
             fi
         done
-    summary_json=$(./jq -n --arg success $success --arg failed $failed --arg rating $rating --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}')     
+    summary_json=$(./jq -n --argjson success $success --argjson failed $failed --argjson rating $rating --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}')     
 
 fi
 done < "$original_file" 
+
+
 output=$(./jq -n --arg testName "$test_name" --argjson tests "$tests_json" --argjson summary "$summary_json" '{testName: $testName, tests: $tests, summary: $summary}')
 echo "$output" > "$output_file"
+
+
 echo $test_num
-echo $lines_count
+
 echo "done"
