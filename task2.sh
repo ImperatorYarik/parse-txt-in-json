@@ -41,7 +41,7 @@ while read -r line;do
         fi
         duration=$(echo "$line" | grep -oE '[0-9]+ms')
         name=$(echo "$line" | sed 's/^.*  //; s/, [0-9].*$//')
-        test=$(./jq -n --arg name "$name" --arg status $status --arg duration "$duration" '{name: $name, status: $status, duration: $duration}')
+        test=$(./jq -n --arg name "$name" --argjson status $status --arg duration "$duration" '{name: $name, status: $status, duration: $duration}')
         tests_json=$(./jq --null-input --argjson tests_json "$tests_json" --argjson test "$test" '$tests_json + [$test]')        
         
     fi
@@ -60,7 +60,7 @@ while read -r line;do
                 duration=$(echo "$line" | grep -oE '[0-9]+ms')
             fi
         done
-    summary_json=$(./jq -n --arg success $success --arg failed $failed --arg rating $rating --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}')     output=$(./jq -n --arg testName "$test_name" --argjson tests "$tests_json" --argjson summary "$summary_json" '{testName: $testName, tests: $tests, summary: $summary}')
+    summary_json=$(./jq -n --argjson success $success --argjson failed $failed --argjson rating $rating --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}')     output=$(./jq -n --arg testName "$test_name" --argjson tests "$tests_json" --argjson summary "$summary_json" '{testName: $testName, tests: $tests, summary: $summary}')
 
 fi
 done < "$original_file" 
