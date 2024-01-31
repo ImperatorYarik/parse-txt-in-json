@@ -46,7 +46,7 @@ while read -r line;do
         
     fi
     
-    if [[ $lines_count -eq 2 ]]; then
+    if [[ $line =~ "rated" ]]; then
      lines_count=0
         IFS=',' read -r -a out <<< "$line"
         for item in "${out[@]}"; do
