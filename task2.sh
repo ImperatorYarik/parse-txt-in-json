@@ -17,8 +17,10 @@ tests_json="[]"
 summary_json="{}"
 
 while read -r line;do 
-    if [[ $line =~ "-" ]]; then
-       ((lines_count++))
+    ((lines_count++))
+    
+    if [[ $line =~ "----------" ]]; then
+       
        continue
     fi
 
@@ -47,33 +49,43 @@ while read -r line;do
         
     fi
     
+   
+        
 
-    if [[ $lines_count -eq 2 ]]; then
-        lines_count=0
-        IFS=',' read -r -a out <<< "$line"
-        for item in "${out[@]}"; do
+
+done < "$original_file" 
+
+
+
+echo "$(tail -1 "$original_file")"     
+IFS=',' read -r -a out <<< "$(tail -1 "$original_file")"
+
+for item in "${out[@]}"; do
             if [[ $item == *'passed'* ]]; then
                 success=$(echo "${out[0]}" | awk '{print $1}')
             elif [[ $item == *'failed'* ]]; then
                 failed=$(echo "${out[1]}" | awk '{print $1}')
             elif [[ $item == *'rated'* ]]; then
-                rating=$(echo "$line" | grep -oE '[0-9]+\.[0-9]+')
+                rating=$(echo "$line" | grep -oE '[0-9]+%|[0-9]+\.[0-9]+%|')
             elif [[ $item == *'spent'* ]]; then
-                duration=$(echo "$line" | grep -oE '[0-9]+ms')
+                duration=$(echo "$line" | grep -oE '[0-9]+ms*')
             fi
 
-        done
-        summary_json=$(./jq -n --argjson success $success --argjson failed $failed --argjson rating $rating --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}')     
+    done
+    echo $success
+    echo $failed
+    echo $rating
+    echo $duration
 
-fi
-done < "$original_file" 
+    summary_json=$(./jq -n --argjson success $success --argjson failed $failed --argjson rating ${rating%\%} --arg duration "$duration" '{success: $success, failed: $failed, rating: $rating, duration: $duration}') 
+
 
 output=$(./jq -n --arg testName "$test_name" --argjson tests "$tests_json" --argjson summary "$summary_json" '{testName: $testName, tests: $tests, summary: $summary}')
 
 
 echo "$output" > "$output_file"
 
-
-echo $test_num
+echo "Separators count: $lines_count"
+echo "test num: $test_num"
 
 echo "done"
